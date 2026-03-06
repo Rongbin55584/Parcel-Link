@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParcelNet — ระบบติดตามพัสดุ</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0e1a; --surface:#111827; --surface2:#1a2235; --border:#1e2d45;
+    --accent:#00d4ff; --accent2:#ff6b35; --text:#e2e8f0; --text-muted:#64748b; --danger:#ef4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow:hidden;}
+
+  .header{background:#111827;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:100;}
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),#7c3aed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .logo-text{font-size:17px;font-weight:700;}
+  .logo-sub{font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
+  .header-stats{display:flex;gap:20px;}
+  .stat-item{text-align:center;}
+  .stat-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent);}
+  .stat-label{font-size:10px;color:var(--text-muted);}
+
+  .app{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 67px);}
+
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+  .sidebar-tabs{display:flex;border-bottom:1px solid var(--border);}
+  .tab-btn{flex:1;padding:11px 8px;background:none;border:none;color:var(--text-muted);font-family:'Kanit',sans-serif;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,212,255,.05);}
+  .tab-content{display:none;flex-direction:column;flex:1;overflow:hidden;}
+  .tab-content.active{display:flex;}
+
+  .form-area{padding:14px;overflow-y:auto;flex:1;}
+  .section-title{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+  .section-title .bar{width:3px;height:13px;border-radius:2px;flex-shrink:0;}
+  .form-group{margin-bottom:8px;}
+  .form-group label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;}
+  .form-group input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'Kanit',sans-serif;font-size:12px;outline:none;transition:border-color .2s,box-shadow .2s;}
+  .form-group input:focus{border-color:var(--focus-color,var(--accent));box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+  .divider{display:flex;align-items:center;gap:10px;margin:12px 0;}
+  .divider-line{flex:1;height:1px;background:var(--border);}
+  .divider-icon{width:30px;height:30px;background:var(--surface2);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .btn-add{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),#0099bb);border:none;border-radius:9px;color:#000;font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+  .btn-add:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,212,255,.3);}
+
+  .search-area{padding:12px;border-bottom:1px solid var(--border);}
+  .search-box{position:relative;}
+  .search-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 11px 8px 34px;color:var(--text);font-family:'Kanit',sans-serif;font-size:12px;outline:none;transition:border-color .2s;}
+  .search-box input:focus{border-color:var(--accent);}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-muted);}
+  .records-list{flex:1;overflow-y:auto;padding:10px;}
+  .record-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px;margin-bottom:7px;transition:all .2s;animation:fadeIn .25s ease;}
+  .record-card:hover{border-color:var(--accent);background:rgba(0,212,255,.04);}
+  .record-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+  .record-id{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+  .record-actions{display:flex;gap:5px;}
+  .btn-icon{width:24px;height:24px;border:none;border-radius:5px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .btn-edit{background:rgba(124,58,237,.2);color:#a78bfa;}
+  .btn-delete{background:rgba(239,68,68,.2);color:var(--danger);}
+  .btn-edit:hover{background:#7c3aed;color:#fff;}
+  .btn-delete:hover{background:var(--danger);color:#fff;}
+  .record-flow{display:flex;align-items:center;gap:6px;font-size:11px;}
+  .record-person{flex:1;}
+  .record-name{font-weight:600;font-size:12px;}
+  .record-phone{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+  .tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:9px;font-weight:600;margin-bottom:2px;}
+  .tag-s{background:rgba(0,212,255,.15);color:var(--accent);}
+  .tag-r{background:rgba(255,107,53,.15);color:var(--accent2);}
+  .export-area{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:7px;}
+  .btn-export{flex:1;padding:8px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text);font-family:'Kanit',sans-serif;font-size:11px;cursor:pointer;transition:all .2s;}
+  .btn-export:hover{border-color:var(--accent);color:var(--accent);}
+  .no-records{text-align:center;padding:28px;color:var(--text-muted);font-size:12px;line-height:1.8;}
+
+  .graph-area{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#0d1629 0%,#0a0e1a 70%);}
+  .graph-area::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;}
+  #graph-canvas{width:100%;height:100%;}
+  .graph-controls{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:5px;}
+  .ctrl-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .ctrl-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  .graph-legend{position:absolute;bottom:14px;left:14px;background:rgba(17,24,39,.92);border:1px solid var(--border);border-radius:10px;padding:11px 14px;backdrop-filter:blur(10px);}
+  .legend-title{font-size:10px;color:var(--text-muted);margin-bottom:7px;letter-spacing:1px;text-transform:uppercase;}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:4px;}
+  .legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+  .legend-line{display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:4px;}
+  .legend-edge{width:24px;height:2px;flex-shrink:0;}
+
+  .tooltip{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px;min-width:190px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+  .tooltip.visible{opacity:1;}
+  .tooltip-type{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+  .tooltip-value{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .tooltip-sub{font-size:11px;color:var(--text-muted);}
+
+  .empty-state{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text-muted);pointer-events:none;}
+  .empty-icon{font-size:46px;margin-bottom:10px;opacity:.25;}
+  .empty-text{font-size:13px;font-weight:300;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;width:390px;max-width:90vw;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-size:15px;font-weight:600;margin-bottom:14px;color:var(--accent);}
+  .modal-actions{display:flex;gap:9px;margin-top:14px;}
+  .btn-primary{flex:1;padding:10px;background:linear-gradient(135deg,var(--accent),#0099bb);border:none;border-radius:8px;color:#000;font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn-secondary{flex:1;padding:10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Kanit',sans-serif;font-size:13px;cursor:pointer;}
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">📦</div>
+    <div>
+      <div class="logo-text">ParcelNet</div>
+      <div class="logo-sub">ระบบติดตามพัสดุ & เส้นความสัมพันธ์</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex:1;justify-content:center;">
+    <div style="display:flex;align-items:center;gap:7px;">
+      <span style="font-size:11px;color:#64748b">👤 ชื่อผู้ใช้:</span>
+      <input id="editor-name" type="text" placeholder="ระบุชื่อของคุณ"
+        style="background:#1a2235;border:1px solid #1e2d45;border-radius:6px;padding:5px 10px;color:#e2e8f0;font-family:'Kanit',sans-serif;font-size:12px;outline:none;width:130px;">
+    </div>
+    <div style="width:1px;height:20px;background:#1e2d45;"></div>
+    <div id="sheet-status" style="font-size:11px;color:#64748b;font-family:'JetBrains Mono',monospace;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">⏳ กำลังเชื่อมต่อ...</div>
+    <div id="conflict-banner" style="display:none;padding:4px 10px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.5);border-radius:6px;font-size:11px;color:#f59e0b;cursor:pointer;" onclick="loadFromSheet()">
+      ⚠️ มีการอัปเดตใหม่ — คลิกเพื่อ Sync
+    </div>
+    <button onclick="loadFromSheet()" style="padding:5px 11px;background:#1a2235;border:1px solid #1e2d45;border-radius:7px;color:#e2e8f0;font-family:'Kanit',sans-serif;font-size:11px;cursor:pointer;white-space:nowrap;">🔄 Sync</button>
+  </div>
+  <div class="header-stats">
+    <div class="stat-item"><div class="stat-val" id="stat-records">0</div><div class="stat-label">รายการ</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-nodes">0</div><div class="stat-label">Node</div></div>
+    <div class="stat-item"><div class="stat-val" id="stat-edges">0</div><div class="stat-label">เส้นเชื่อม</div></div>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" onclick="switchTab('add')">➕ เพิ่มข้อมูล</button>
+      <button class="tab-btn" onclick="switchTab('list')">📋 รายการ</button>
+    </div>
+    <div class="tab-content active" id="tab-add">
+      <div class="form-area">
+        <div class="section-title" style="color:#00d4ff"><div class="bar" style="background:#00d4ff"></div>ผู้ส่ง</div>
+        <div class="form-group"><label>📞 เบอร์โทรศัพท์</label><input type="text" id="s-phone" placeholder="0XX-XXX-XXXX"></div>
+        <div class="form-group"><label>👤 ชื่อ-นามสกุล</label><input type="text" id="s-name" placeholder="ชื่อผู้ส่ง"></div>
+        <div class="form-group"><label>📍 ที่อยู่</label><input type="text" id="s-addr" placeholder="ที่อยู่ผู้ส่ง"></div>
+        <div class="divider"><div class="divider-line"></div><div class="divider-icon">➡️</div><div class="divider-line"></div></div>
+        <div class="section-title" style="color:#ff6b35"><div class="bar" style="background:#ff6b35"></div>ผู้รับ</div>
+        <div class="form-group"><label>📞 เบอร์โทรศัพท์</label><input type="text" id="r-phone" placeholder="0XX-XXX-XXXX"></div>
+        <div class="form-group"><label>👤 ชื่อ-นามสกุล</label><input type="text" id="r-name" placeholder="ชื่อผู้รับ"></div>
+        <div class="form-group"><label>📍 ที่อยู่</label><input type="text" id="r-addr" placeholder="ที่อยู่ผู้รับ"></div>
+        <button class="btn-add" onclick="addRecord()">📦 บันทึกรายการ</button>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-list">
+      <div class="search-area">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="ค้นหาชื่อหรือเบอร์..." oninput="filterRecords()">
+        </div>
+      </div>
+      <div class="records-list" id="records-list"><div class="no-records">ยังไม่มีรายการ<br>เพิ่มข้อมูลได้เลย</div></div>
+      <div class="export-area">
+        <button class="btn-export" onclick="exportJSON()">⬇ JSON</button>
+        <button class="btn-export" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="graph-area">
+    <canvas id="graph-canvas"></canvas>
+    <div class="graph-controls">
+      <button class="ctrl-btn" onclick="zoomIn()">＋</button>
+      <button class="ctrl-btn" onclick="zoomOut()">－</button>
+      <button class="ctrl-btn" onclick="resetView()">⊙</button>
+    </div>
+    <div class="graph-legend">
+      <div class="legend-title">ประเภท Node</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00d4ff"></div>เบอร์ผู้ส่ง</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div>เบอร์ผู้รับ</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>ชื่อผู้ส่ง</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>ชื่อผู้รับ</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div>ที่อยู่ผู้ส่ง</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div>ที่อยู่ผู้รับ</div>
+      <div style="border-top:1px solid #1e2d45;margin:7px 0;"></div>
+      <div class="legend-title">เส้นเชื่อม</div>
+      <div class="legend-line"><div class="legend-edge" style="background:#ffffff;opacity:.7"></div>ส่งพัสดุ (→)</div>
+      <div class="legend-line"><div class="legend-edge" style="background:#00d4ff;opacity:.6;height:1px;border-top:2px dashed #00d4ff"></div>ข้อมูลผู้ส่ง</div>
+      <div class="legend-line"><div class="legend-edge" style="background:#ff6b35;opacity:.6;height:1px;border-top:2px dashed #ff6b35"></div>ข้อมูลผู้รับ</div>
+    </div>
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🕸️</div>
+      <div class="empty-text">เพิ่มข้อมูลพัสดุเพื่อสร้างแผนที่ความสัมพันธ์</div>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ แก้ไขรายการ</div>
+    <input type="hidden" id="edit-id">
+    <div class="section-title" style="color:#00d4ff;margin-bottom:9px"><div class="bar" style="background:#00d4ff;width:3px;height:13px;border-radius:2px;display:inline-block;margin-right:7px;vertical-align:middle"></div>ผู้ส่ง</div>
+    <div class="form-group"><label>เบอร์</label><input type="text" id="edit-s-phone"></div>
+    <div class="form-group"><label>ชื่อ</label><input type="text" id="edit-s-name"></div>
+    <div class="form-group"><label>ที่อยู่</label><input type="text" id="edit-s-addr"></div>
+    <div class="section-title" style="color:#ff6b35;margin:12px 0 9px"><div class="bar" style="background:#ff6b35;width:3px;height:13px;border-radius:2px;display:inline-block;margin-right:7px;vertical-align:middle"></div>ผู้รับ</div>
+    <div class="form-group"><label>เบอร์</label><input type="text" id="edit-r-phone"></div>
+    <div class="form-group"><label>ชื่อ</label><input type="text" id="edit-r-name"></div>
+    <div class="form-group"><label>ที่อยู่</label><input type="text" id="edit-r-addr"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn-primary" onclick="saveEdit()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+let records = [];
+let idCounter = 1;
+
+// ── GRAPH ─────────────────────────────────────────────────────
+const canvas = document.getElementById('graph-canvas');
+const ctx = canvas.getContext('2d');
+let nodes = [], edges = [];
+let zoom = 1, panX = 0, panY = 0;
+let dragNode = null, isPanning = false;
+let lastMX = 0, lastMY = 0;
+let animFrame = null;
+let hoveredNode = null;
+
+const NODE_CFG = {
+  PHONE_S: { color:'#00d4ff', label:'เบอร์ผู้ส่ง',   emoji:'📞', r:26 },
+  PHONE_R: { color:'#ff6b35', label:'เบอร์ผู้รับ',    emoji:'📞', r:26 },
+  NAME_S:  { color:'#34d399', label:'ชื่อผู้ส่ง',     emoji:'👤', r:20 },
+  NAME_R:  { color:'#f59e0b', label:'ชื่อผู้รับ',     emoji:'👤', r:20 },
+  ADDR_S:  { color:'#818cf8', label:'ที่อยู่ผู้ส่ง',  emoji:'📍', r:20 },
+  ADDR_R:  { color:'#fb7185', label:'ที่อยู่ผู้รับ',  emoji:'📍', r:20 },
+};
+
+// ── REBUILD GRAPH ─────────────────────────────────────────────
+function rebuildGraph() {
+  nodes = []; edges = [];
+  resizeCanvas();
+
+  const cw = canvas.width, ch = canvas.height;
+
+  // ── getOrCreate: ถ้า type+value ซ้ำ → ใช้ node เดิม ──────────
+  // key = "TYPE||value"  (ค่าว่างแต่ละ record จะไม่ share กัน)
+  const nodeMap = new Map();
+
+  function getOrCreate(type, value, fallbackX, fallbackY) {
+    // ค่าว่าง → สร้าง node ใหม่เสมอ (ไม่ merge)
+    const key = value ? `${type}||${value}` : null;
+    if (key && nodeMap.has(key)) return nodeMap.get(key);
+
+    const n = {
+      id: key || `${type}_${Math.random()}`,
+      type, value,
+      x: fallbackX + (Math.random()-.5)*24,
+      y: fallbackY + (Math.random()-.5)*24,
+      vx:0, vy:0,
+      r: NODE_CFG[type].r,
+      color: NODE_CFG[type].color,
+      records: []
+    };
+    nodes.push(n);
+    if (key) nodeMap.set(key, n);
+    return n;
+  }
+
+  // ── addEdge: ไม่สร้างซ้ำ (undirected ก็ตรวจทั้งสองทิศ) ────────
+  function addEdge(src, tgt, style) {
+    const dup = edges.find(e =>
+      (e.source===src && e.target===tgt) ||
+      (style!=='SEND' && e.source===tgt && e.target===src)
+    );
+    if (!dup) edges.push({ source:src, target:tgt, style });
+  }
+
+  // ── วนทุก record ──────────────────────────────────────────────
+  records.forEach((rec, ri) => {
+    // กระจาย cluster ให้ห่างกัน (สำหรับ record ใหม่ที่ยังไม่มี node)
+    const ang = (ri / Math.max(records.length,1)) * 2 * Math.PI - Math.PI/2;
+    const clR = records.length > 1 ? 180 + records.length*18 : 0;
+    const cx = cw/2 + Math.cos(ang)*clR;
+    const cy = ch/2 + Math.sin(ang)*clR;
+    const s = 120;
+
+    // สร้าง / หา node (ถ้าค่าซ้ำจะได้ node เดิมทันที)
+    const phoneS = getOrCreate('PHONE_S', rec.sPhone, cx - s*.85,  cy);
+    const nameS  = getOrCreate('NAME_S',  rec.sName,  cx - s*1.9,  cy - s*.75);
+    const addrS  = getOrCreate('ADDR_S',  rec.sAddr,  cx - s*1.9,  cy + s*.75);
+    const phoneR = getOrCreate('PHONE_R', rec.rPhone, cx + s*.85,  cy);
+    const nameR  = getOrCreate('NAME_R',  rec.rName,  cx + s*1.9,  cy - s*.75);
+    const addrR  = getOrCreate('ADDR_R',  rec.rAddr,  cx + s*1.9,  cy + s*.75);
+
+    // บันทึกว่า node นี้อยู่ใน record ใดบ้าง
+    [phoneS,nameS,addrS,phoneR,nameR,addrR].forEach(n => {
+      if (!n.records.includes(rec.id)) n.records.push(rec.id);
+    });
+
+    // เส้นความสัมพันธ์ตามกฎ:
+    addEdge(phoneS, phoneR, 'SEND');   // เบอร์ผู้ส่ง → เบอร์ผู้รับ
+    addEdge(phoneS, nameS,  'INFO_S'); // เบอร์ผู้ส่ง — ชื่อผู้ส่ง
+    addEdge(phoneS, addrS,  'INFO_S'); // เบอร์ผู้ส่ง — ที่อยู่ผู้ส่ง
+    addEdge(phoneR, nameR,  'INFO_R'); // เบอร์ผู้รับ — ชื่อผู้รับ
+    addEdge(phoneR, addrR,  'INFO_R'); // เบอร์ผู้รับ — ที่อยู่ผู้รับ
+  });
+
+  document.getElementById('empty-state').style.display = nodes.length ? 'none' : 'block';
+  updateStats();
+  startSim();
+}
+
+// ── PHYSICS SIM ───────────────────────────────────────────────
+function startSim() {
+  cancelAnimationFrame(animFrame);
+  let alpha = 1.0;
+  const REST = { SEND:210, INFO_S:130, INFO_R:130 };
+
+  function tick() {
+    nodes.forEach(n => { n.vx=0; n.vy=0; });
+
+    // Node repulsion
+    for (let i=0; i<nodes.length; i++) {
+      for (let j=i+1; j<nodes.length; j++) {
+        const a=nodes[i], b=nodes[j];
+        let dx=b.x-a.x, dy=b.y-a.y;
+        const d=Math.sqrt(dx*dx+dy*dy)||0.1;
+        const f=Math.min(9000/(d*d),300)*alpha;
+        const fx=(dx/d)*f, fy=(dy/d)*f;
+        a.vx-=fx; a.vy-=fy; b.vx+=fx; b.vy+=fy;
+      }
+    }
+
+    // Spring attraction on edges
+    edges.forEach(e => {
+      const a=e.source, b=e.target;
+      const dx=b.x-a.x, dy=b.y-a.y;
+      const d=Math.sqrt(dx*dx+dy*dy)||0.1;
+      const rest=REST[e.style]||150;
+      const f=(d-rest)*0.045*alpha;
+      const fx=(dx/d)*f, fy=(dy/d)*f;
+      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+    });
+
+    // Gravity toward center
+    const cx=canvas.width/2, cy=canvas.height/2;
+    nodes.forEach(n => {
+      n.vx+=(cx-n.x)*0.005*alpha;
+      n.vy+=(cy-n.y)*0.005*alpha;
+    });
+
+    // Apply
+    nodes.forEach(n => {
+      if (n===dragNode) return;
+      n.x+=n.vx*0.5; n.y+=n.vy*0.5;
+    });
+
+    alpha*=0.975;
+    drawGraph();
+    if (alpha>0.003||dragNode) animFrame=requestAnimationFrame(tick);
+  }
+  animFrame=requestAnimationFrame(tick);
+}
+
+// ── DRAW ──────────────────────────────────────────────────────
+function resizeCanvas() {
+  const p=canvas.parentElement;
+  canvas.width=p.clientWidth; canvas.height=p.clientHeight;
+}
+
+function drawGraph() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.translate(panX,panY);
+  ctx.scale(zoom,zoom);
+
+  // Edges
+  edges.forEach(e => {
+    const a=e.source, b=e.target;
+    const dx=b.x-a.x, dy=b.y-a.y;
+    const d=Math.sqrt(dx*dx+dy*dy)||1;
+
+    ctx.beginPath();
+    if (e.style==='SEND') {
+      ctx.setLineDash([]);
+      ctx.strokeStyle='rgba(255,255,255,0.65)';
+      ctx.lineWidth=2;
+    } else if (e.style==='INFO_S') {
+      ctx.setLineDash([6,5]);
+      ctx.strokeStyle='rgba(0,212,255,0.5)';
+      ctx.lineWidth=1.3;
+    } else {
+      ctx.setLineDash([6,5]);
+      ctx.strokeStyle='rgba(255,107,53,0.5)';
+      ctx.lineWidth=1.3;
+    }
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Arrow only on SEND edge
+    if (e.style==='SEND') {
+      const tr=b.r+5;
+      const ax=b.x-(dx/d)*tr, ay=b.y-(dy/d)*tr;
+      const px=(-dy/d)*6, py=(dx/d)*6;
+      ctx.beginPath();
+      ctx.moveTo(ax+px, ay+py);
+      ctx.lineTo(b.x-(dx/d)*(tr-5), b.y-(dy/d)*(tr-5));
+      ctx.lineTo(ax-px, ay-py);
+      ctx.fillStyle='rgba(255,255,255,0.8)';
+      ctx.fill();
+    }
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    const isHover=n===hoveredNode;
+    const r=n.r;
+
+    ctx.shadowColor=n.color;
+    ctx.shadowBlur=isHover?30:14;
+
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,r+(isHover?8:4),0,Math.PI*2);
+    ctx.strokeStyle=n.color+(isHover?'cc':'33');
+    ctx.lineWidth=isHover?2.5:1.5;
+    ctx.stroke();
+
+    // Fill
+    const grad=ctx.createRadialGradient(n.x-r*.25,n.y-r*.25,1,n.x,n.y,r);
+    grad.addColorStop(0,n.color+'ee');
+    grad.addColorStop(1,n.color+'44');
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle=grad;
+    ctx.fill();
+    ctx.shadowBlur=0;
+
+    // Value text
+    const maxCh=r>22?9:7;
+    const disp=n.value?(n.value.length>maxCh?n.value.slice(0,maxCh-1)+'…':n.value):'—';
+    ctx.fillStyle='#fff';
+    ctx.font=`${r>22?'10':'9'}px Kanit`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(disp,n.x,n.y);
+
+    // Label below
+    ctx.fillStyle=n.color+'99';
+    ctx.font='8px Kanit';
+    ctx.textBaseline='top';
+    ctx.fillText(NODE_CFG[n.type].label,n.x,n.y+r+4);
+  });
+
+  ctx.restore();
+}
+
+// ── MOUSE ─────────────────────────────────────────────────────
+function wp(mx,my){return{x:(mx-panX)/zoom,y:(my-panY)/zoom};}
+function hitNode(mx,my){const p=wp(mx,my);return nodes.find(n=>Math.hypot(n.x-p.x,n.y-p.y)<n.r+6);}
+
+canvas.addEventListener('mousedown',e=>{
+  const h=hitNode(e.offsetX,e.offsetY);
+  if(h){dragNode=h;startSim();}else isPanning=true;
+  lastMX=e.offsetX;lastMY=e.offsetY;
+});
+canvas.addEventListener('mousemove',e=>{
+  if(dragNode){const p=wp(e.offsetX,e.offsetY);dragNode.x=p.x;dragNode.y=p.y;drawGraph();}
+  else if(isPanning){panX+=e.offsetX-lastMX;panY+=e.offsetY-lastMY;drawGraph();}
+  const h=hitNode(e.offsetX,e.offsetY);
+  canvas.style.cursor=h?'pointer':'grab';
+  if(h!==hoveredNode){hoveredNode=h;if(h)showTip(h,e.clientX,e.clientY);else hideTip();drawGraph();}
+  else if(h)moveTip(e.clientX,e.clientY);
+  lastMX=e.offsetX;lastMY=e.offsetY;
+});
+canvas.addEventListener('mouseup',()=>{dragNode=null;isPanning=false;});
+canvas.addEventListener('mouseleave',()=>{dragNode=null;isPanning=false;hoveredNode=null;hideTip();});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=e.deltaY<0?1.12:0.88;
+  const wx=(e.offsetX-panX)/zoom,wy=(e.offsetY-panY)/zoom;
+  zoom=Math.max(0.1,Math.min(6,zoom*f));
+  panX=e.offsetX-wx*zoom;panY=e.offsetY-wy*zoom;
+  drawGraph();
+},{passive:false});
+
+// ── TOOLTIP ───────────────────────────────────────────────────
+const tip=document.getElementById('tooltip');
+function showTip(n,cx,cy){
+  const cfg=NODE_CFG[n.type];
+  const conns=edges.filter(e=>e.source===n||e.target===n).length;
+  tip.innerHTML=`
+    <div class="tooltip-type" style="color:${n.color}">${cfg.emoji} ${cfg.label}</div>
+    <div class="tooltip-value">${n.value||'—'}</div>
+    <div class="tooltip-sub" style="margin-top:6px">🔗 ${conns} เส้นเชื่อม &nbsp;|&nbsp; ${n.records.length} รายการ</div>
+  `;
+  tip.classList.add('visible');
+  moveTip(cx,cy);
+}
+function moveTip(cx,cy){
+  const rect=canvas.getBoundingClientRect();
+  let x=cx-rect.left+14,y=cy-rect.top-10;
+  if(x+210>canvas.clientWidth)x=cx-rect.left-215;
+  tip.style.left=x+'px';tip.style.top=y+'px';
+}
+function hideTip(){tip.classList.remove('visible');}
+
+// ── ZOOM ──────────────────────────────────────────────────────
+function zoomIn(){const f=1.2,cx=canvas.width/2,cy=canvas.height/2;panX=cx-(cx-panX)*f;panY=cy-(cy-panY)*f;zoom=Math.min(6,zoom*f);drawGraph();}
+function zoomOut(){const f=0.8,cx=canvas.width/2,cy=canvas.height/2;panX=cx-(cx-panX)*f;panY=cy-(cy-panY)*f;zoom=Math.max(0.1,zoom*f);drawGraph();}
+function resetView(){zoom=1;panX=0;panY=0;drawGraph();}
+
+// ── GOOGLE SHEETS API ─────────────────────────────────────────
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzoahmUyx9LB-4EwZL1HwX5DvaQRMO4MAbxlr9t1X6EEJrVVobeSjgEaIkrSdUdeByw/exec';
+
+let currentVersion = 0;      // version ล่าสุดที่เรารู้
+let pollInterval   = null;   // auto-poll timer
+const POLL_MS      = 30000;  // poll ทุก 30 วินาที
+
+function editorName() {
+  return document.getElementById('editor-name').value.trim() || 'ไม่ระบุ';
+}
+
+function setStatus(msg, type='info') {
+  const el = document.getElementById('sheet-status');
+  if (!el) return;
+  const colors = { info:'#64748b', ok:'#10b981', error:'#ef4444', loading:'#f59e0b' };
+  const icons  = { info:'🔗', ok:'✅', error:'❌', loading:'⏳' };
+  el.textContent = icons[type] + ' ' + msg;
+  el.style.color = colors[type];
+}
+
+function showConflictBanner(show) {
+  document.getElementById('conflict-banner').style.display = show ? 'block' : 'none';
+}
+
+async function gasPost(payload) {
+  payload.editor = editorName();
+  const res = await fetch(GAS_URL, { method:'POST', body:JSON.stringify(payload) });
+  return res.json();
+}
+
+async function gasGet() {
+  const res = await fetch(GAS_URL);
+  return res.json();
+}
+
+// ── โหลดข้อมูลจาก Sheet ────────────────────────────────────────
+async function loadFromSheet(silent=false) {
+  if (!silent) setStatus('กำลังโหลด...', 'loading');
+  showConflictBanner(false);
+  try {
+    const data = await gasGet();
+    if (!data.success) throw new Error(data.error);
+
+    records = (data.records||[]).map(row => ({
+      id:     row['ID']          || '',
+      sPhone: row['เบอร์ผู้ส่ง']  || '',
+      sName:  row['ชื่อผู้ส่ง']   || '',
+      sAddr:  row['ที่อยู่ผู้ส่ง'] || '',
+      rPhone: row['เบอร์ผู้รับ']  || '',
+      rName:  row['ชื่อผู้รับ']   || '',
+      rAddr:  row['ที่อยู่ผู้รับ'] || '',
+    }));
+
+    const nums = records.map(r=>parseInt(r.id.replace(/\D/g,''))||0);
+    idCounter = Math.max(...nums, 0) + 1;
+
+    // บันทึก version
+    if (data.version) currentVersion = data.version.v || 0;
+
+    const who  = data.version?.editor ? ` (แก้ไขโดย: ${data.version.editor})` : '';
+    const time = data.version?.time   ? ` เมื่อ ${data.version.time}` : '';
+    setStatus(`${records.length} รายการ${time}${who}`, 'ok');
+    rebuildGraph(); renderList();
+  } catch(err) {
+    setStatus('เชื่อมต่อไม่ได้: ' + err.message, 'error');
+  }
+}
+
+// ── Auto-Poll: ตรวจ version ทุก 30 วิ ─────────────────────────
+async function pollVersion() {
+  try {
+    const data = await gasGet();
+    if (!data.success || !data.version) return;
+    const remoteV = data.version.v || 0;
+    if (remoteV > currentVersion) {
+      // มีคนอื่น update — แสดง banner แต่ไม่ force reload
+      const editor = data.version.editor || 'ไม่ระบุ';
+      const time   = data.version.time   || '';
+      showConflictBanner(true);
+      setStatus(`⚡ ${editor} อัปเดตข้อมูล${time ? ' เมื่อ '+time : ''}`, 'loading');
+    }
+  } catch(_) {}
+}
+
+function startPolling() {
+  stopPolling();
+  pollInterval = setInterval(pollVersion, POLL_MS);
+}
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+// ── RECORDS ───────────────────────────────────────────────────
+async function addRecord() {
+  const sp=v('s-phone'),sn=v('s-name'),sa=v('s-addr');
+  const rp=v('r-phone'),rn=v('r-name'),ra=v('r-addr');
+  if (!sp||!sn||!rp||!rn) { alert('กรุณากรอกเบอร์และชื่อผู้ส่ง-ผู้รับ'); return; }
+
+  // ตรวจ conflict ก่อน save
+  const hasConflict = await checkConflict();
+  if (hasConflict) {
+    const ok = confirm('⚠️ มีคนอื่นอัปเดตข้อมูลอยู่!\n\nกด OK เพื่อ Sync ข้อมูลใหม่ก่อน แล้วค่อยเพิ่มใหม่อีกครั้ง\nกด Cancel เพื่อบันทึกทับ (อาจเกิดข้อมูลซ้ำ)');
+    if (ok) { await loadFromSheet(); return; }
+  }
+
+  const rec = { id:'R'+String(idCounter++).padStart(4,'0'), sPhone:sp, sName:sn, sAddr:sa, rPhone:rp, rName:rn, rAddr:ra };
+  records.push(rec);
+  ['s-phone','s-name','s-addr','r-phone','r-name','r-addr'].forEach(id => document.getElementById(id).value='');
+  rebuildGraph(); renderList(); switchTab('list');
+
+  setStatus('กำลังบันทึก...', 'loading');
+  try {
+    const res = await gasPost({ action:'add', record:rec });
+    if (res.success) {
+      currentVersion = res.version?.v || currentVersion;
+      setStatus(`บันทึก ${rec.id} สำเร็จ โดย ${editorName()}`, 'ok');
+      showConflictBanner(false);
+    } else {
+      setStatus('บันทึกไม่สำเร็จ: ' + res.error, 'error');
+    }
+  } catch(e) { setStatus('ส่งข้อมูลไม่ได้: '+e.message, 'error'); }
+}
+
+function v(id) { return document.getElementById(id).value.trim(); }
+
+async function deleteRecord(id) {
+  if (!confirm('ลบรายการนี้?')) return;
+
+  const hasConflict = await checkConflict();
+  if (hasConflict) {
+    const ok = confirm('⚠️ มีคนอื่นอัปเดตข้อมูลอยู่!\nกด OK เพื่อ Sync ก่อน / Cancel เพื่อลบทับ');
+    if (ok) { await loadFromSheet(); return; }
+  }
+
+  records = records.filter(r => r.id !== id);
+  rebuildGraph(); renderList();
+
+  setStatus('กำลังลบ...', 'loading');
+  try {
+    const res = await gasPost({ action:'delete', id });
+    if (res.success) {
+      currentVersion = res.version?.v || currentVersion;
+      setStatus(`ลบ ${id} สำเร็จ`, 'ok');
+      showConflictBanner(false);
+    } else {
+      setStatus('ลบไม่สำเร็จ: ' + res.error, 'error');
+    }
+  } catch(e) { setStatus('ลบไม่ได้: '+e.message, 'error'); }
+}
+
+function openEditModal(id) {
+  const r = records.find(x => x.id===id); if (!r) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-s-phone').value = r.sPhone;
+  document.getElementById('edit-s-name').value  = r.sName;
+  document.getElementById('edit-s-addr').value  = r.sAddr;
+  document.getElementById('edit-r-phone').value = r.rPhone;
+  document.getElementById('edit-r-name').value  = r.rName;
+  document.getElementById('edit-r-addr').value  = r.rAddr;
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const r  = records.find(x => x.id===id); if (!r) return;
+
+  const hasConflict = await checkConflict();
+  if (hasConflict) {
+    const ok = confirm('⚠️ มีคนอื่นอัปเดตข้อมูลอยู่!\nกด OK เพื่อ Sync ก่อน / Cancel เพื่อแก้ไขทับ');
+    if (ok) { closeModal(); await loadFromSheet(); return; }
+  }
+
+  r.sPhone = document.getElementById('edit-s-phone').value.trim();
+  r.sName  = document.getElementById('edit-s-name').value.trim();
+  r.sAddr  = document.getElementById('edit-s-addr').value.trim();
+  r.rPhone = document.getElementById('edit-r-phone').value.trim();
+  r.rName  = document.getElementById('edit-r-name').value.trim();
+  r.rAddr  = document.getElementById('edit-r-addr').value.trim();
+  closeModal(); rebuildGraph(); renderList();
+
+  setStatus('กำลังอัปเดต...', 'loading');
+  try {
+    const res = await gasPost({ action:'update', record:r });
+    if (res.success) {
+      currentVersion = res.version?.v || currentVersion;
+      setStatus(`อัปเดต ${id} สำเร็จ`, 'ok');
+      showConflictBanner(false);
+    } else {
+      setStatus('อัปเดตไม่สำเร็จ: ' + res.error, 'error');
+    }
+  } catch(e) { setStatus('อัปเดตไม่ได้: '+e.message, 'error'); }
+}
+
+function closeModal() { document.getElementById('edit-modal').classList.remove('open'); }
+
+// ── CONFLICT CHECK ────────────────────────────────────────────
+async function checkConflict() {
+  try {
+    const data = await gasGet();
+    if (!data.version) return false;
+    return (data.version.v || 0) > currentVersion;
+  } catch(_) { return false; }
+}
+
+// ── LIST ──────────────────────────────────────────────────────
+let fq = '';
+function filterRecords() { fq = document.getElementById('search-input').value.toLowerCase(); renderList(); }
+function renderList() {
+  const list = document.getElementById('records-list');
+  const filtered = records.filter(r =>
+    !fq || r.sName.toLowerCase().includes(fq) || r.rName.toLowerCase().includes(fq) ||
+    r.sPhone.includes(fq) || r.rPhone.includes(fq)
+  );
+  if (!filtered.length) {
+    list.innerHTML = `<div class="no-records">${records.length ? 'ไม่พบผลการค้นหา' : 'ยังไม่มีรายการ<br>เพิ่มข้อมูลได้เลย'}</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(r => `
+    <div class="record-card">
+      <div class="record-header">
+        <span class="record-id">${r.id}</span>
+        <div class="record-actions">
+          <button class="btn-icon btn-edit" onclick="openEditModal('${r.id}')">✏️</button>
+          <button class="btn-icon btn-delete" onclick="deleteRecord('${r.id}')">🗑️</button>
+        </div>
+      </div>
+      <div class="record-flow">
+        <div class="record-person"><div class="tag tag-s">ผู้ส่ง</div><div class="record-name">${r.sName}</div><div class="record-phone">${r.sPhone}</div></div>
+        <span style="color:#64748b;font-size:16px">→</span>
+        <div class="record-person"><div class="tag tag-r">ผู้รับ</div><div class="record-name">${r.rName}</div><div class="record-phone">${r.rPhone}</div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('stat-records').textContent = records.length;
+  document.getElementById('stat-nodes').textContent   = nodes.length;
+  document.getElementById('stat-edges').textContent   = edges.length;
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active',(i===0&&tab==='add')||(i===1&&tab==='list')));
+  document.getElementById('tab-add').classList.toggle('active',  tab==='add');
+  document.getElementById('tab-list').classList.toggle('active', tab==='list');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportJSON() { dl(JSON.stringify(records,null,2),'parcel-data.json','application/json'); }
+function exportCSV() {
+  const hdr  = 'เบอร์ผู้ส่ง,ชื่อผู้ส่ง,ที่อยู่ผู้ส่ง,เบอร์ผู้รับ,ชื่อผู้รับ,ที่อยู่ผู้รับ';
+  const rows = records.map(r=>`${r.sPhone},"${r.sName}","${r.sAddr}",${r.rPhone},"${r.rName}","${r.rAddr}"`);
+  dl('\uFEFF'+[hdr,...rows].join('\n'),'parcel-data.csv','text/csv;charset=utf-8');
+}
+function dl(content,name,type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = name; a.click();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('resize', () => { resizeCanvas(); drawGraph(); });
+resizeCanvas(); drawGraph();
+loadFromSheet().then(() => startPolling());
+</script>
+</body>
+</html>
