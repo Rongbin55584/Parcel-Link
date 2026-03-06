@@ -187,8 +187,10 @@
       <div class="legend-item"><div class="legend-dot" style="background:#ff6b35"></div>เบอร์ผู้รับ</div>
       <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>ชื่อผู้ส่ง</div>
       <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>ชื่อผู้รับ</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a3e635"></div>ชื่อ (รับ & ส่ง)</div>
       <div class="legend-item"><div class="legend-dot" style="background:#818cf8"></div>ที่อยู่ผู้ส่ง</div>
       <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div>ที่อยู่ผู้รับ</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e879f9"></div>ที่อยู่ (รับ & ส่ง)</div>
       <div style="border-top:1px solid #1e2d45;margin:7px 0;"></div>
       <div class="legend-title">เส้นเชื่อม</div>
       <div class="legend-line"><div class="legend-edge" style="background:#ffffff;opacity:.7"></div>ส่งพัสดุ (→)</div>
@@ -238,12 +240,14 @@ let animFrame = null;
 let hoveredNode = null;
 
 const NODE_CFG = {
-  PHONE_S: { color:'#00d4ff', label:'เบอร์ผู้ส่ง',   emoji:'📞', r:26 },
-  PHONE_R: { color:'#ff6b35', label:'เบอร์ผู้รับ',    emoji:'📞', r:26 },
-  NAME_S:  { color:'#34d399', label:'ชื่อผู้ส่ง',     emoji:'👤', r:20 },
-  NAME_R:  { color:'#f59e0b', label:'ชื่อผู้รับ',     emoji:'👤', r:20 },
-  ADDR_S:  { color:'#818cf8', label:'ที่อยู่ผู้ส่ง',  emoji:'📍', r:20 },
-  ADDR_R:  { color:'#fb7185', label:'ที่อยู่ผู้รับ',  emoji:'📍', r:20 },
+  PHONE_S:  { color:'#00d4ff', label:'เบอร์ผู้ส่ง',      emoji:'📞', r:26 },
+  PHONE_R:  { color:'#ff6b35', label:'เบอร์ผู้รับ',       emoji:'📞', r:26 },
+  NAME_S:   { color:'#34d399', label:'ชื่อผู้ส่ง',        emoji:'👤', r:20 },
+  NAME_R:   { color:'#f59e0b', label:'ชื่อผู้รับ',        emoji:'👤', r:20 },
+  NAME_SR:  { color:'#a3e635', label:'ชื่อ (รับ & ส่ง)',  emoji:'👤', r:22 },
+  ADDR_S:   { color:'#818cf8', label:'ที่อยู่ผู้ส่ง',     emoji:'📍', r:20 },
+  ADDR_R:   { color:'#fb7185', label:'ที่อยู่ผู้รับ',     emoji:'📍', r:20 },
+  ADDR_SR:  { color:'#e879f9', label:'ที่อยู่ (รับ & ส่ง)', emoji:'📍', r:22 },
 };
 
 // ── REBUILD GRAPH ─────────────────────────────────────────────
@@ -253,28 +257,64 @@ function rebuildGraph() {
 
   const cw = canvas.width, ch = canvas.height;
 
-  // ── getOrCreate: ถ้า type+value ซ้ำ → ใช้ node เดิม ──────────
-  // key = "TYPE||value"  (ค่าว่างแต่ละ record จะไม่ share กัน)
+  // nodeMap key:
+  //   - PHONE_S / PHONE_R  → "PHONE_S||value" / "PHONE_R||value"  (ไม่ merge ข้ามประเภท)
+  //   - NAME / ADDR        → "NAME||value" / "ADDR||value"         (merge ข้ามส่ง-รับ)
   const nodeMap = new Map();
 
   function getOrCreate(type, value, fallbackX, fallbackY) {
-    // ค่าว่าง → สร้าง node ใหม่เสมอ (ไม่ merge)
-    const key = value ? `${type}||${value}` : null;
-    if (key && nodeMap.has(key)) return nodeMap.get(key);
+    if (!value) {
+      // ค่าว่าง → สร้างใหม่เสมอ
+      const n = newNode(type, value, fallbackX, fallbackY);
+      nodes.push(n);
+      return n;
+    }
 
-    const n = {
-      id: key || `${type}_${Math.random()}`,
+    // NAME_S / NAME_R → ใช้ key กลาง "NAME||value" เพื่อ merge
+    // ADDR_S / ADDR_R → ใช้ key กลาง "ADDR||value"
+    // PHONE_S / PHONE_R → key แยกกัน ไม่ merge
+    let mergeKey = null;
+    if (type === 'NAME_S' || type === 'NAME_R') mergeKey = `NAME||${value}`;
+    if (type === 'ADDR_S' || type === 'ADDR_R') mergeKey = `ADDR||${value}`;
+    const key = mergeKey || `${type}||${value}`;
+
+    if (nodeMap.has(key)) {
+      const existing = nodeMap.get(key);
+      // อัปเกรด type เป็น SR ถ้ามาจากคนละฝั่ง
+      if (mergeKey) {
+        const isNameMerge = (existing.type==='NAME_S'||existing.type==='NAME_R'||existing.type==='NAME_SR');
+        const isAddrMerge = (existing.type==='ADDR_S'||existing.type==='ADDR_R'||existing.type==='ADDR_SR');
+        if (isNameMerge && existing.type !== 'NAME_SR' && type !== existing.type) {
+          existing.type  = 'NAME_SR';
+          existing.color = NODE_CFG['NAME_SR'].color;
+          existing.r     = NODE_CFG['NAME_SR'].r;
+        }
+        if (isAddrMerge && existing.type !== 'ADDR_SR' && type !== existing.type) {
+          existing.type  = 'ADDR_SR';
+          existing.color = NODE_CFG['ADDR_SR'].color;
+          existing.r     = NODE_CFG['ADDR_SR'].r;
+        }
+      }
+      return existing;
+    }
+
+    const n = newNode(type, value, fallbackX, fallbackY);
+    nodes.push(n);
+    nodeMap.set(key, n);
+    return n;
+  }
+
+  function newNode(type, value, fx, fy) {
+    return {
+      id: `${type}||${value||Math.random()}`,
       type, value,
-      x: fallbackX + (Math.random()-.5)*24,
-      y: fallbackY + (Math.random()-.5)*24,
+      x: fx + (Math.random()-.5)*24,
+      y: fy + (Math.random()-.5)*24,
       vx:0, vy:0,
       r: NODE_CFG[type].r,
       color: NODE_CFG[type].color,
       records: []
     };
-    nodes.push(n);
-    if (key) nodeMap.set(key, n);
-    return n;
   }
 
   // ── addEdge: ไม่สร้างซ้ำ (undirected ก็ตรวจทั้งสองทิศ) ────────
