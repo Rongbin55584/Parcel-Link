@@ -7,13 +7,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:#0a0e1a; --surface:#111827; --surface2:#1a2235; --border:#1e2d45;
-    --accent:#00d4ff; --accent2:#ff6b35; --text:#e2e8f0; --text-muted:#64748b; --danger:#ef4444;
+    --bg:#1e2a3a; --surface:#253347; --surface2:#2d3f55; --border:#3a5068;
+    --accent:#00d4ff; --accent2:#ff6b35; --text:#e2e8f0; --text-muted:#8aaabf; --danger:#ef4444;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow:hidden;}
 
-  .header{background:#111827;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:100;}
+  .header{background:#253347;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:100;}
   .logo{display:flex;align-items:center;gap:12px;}
   .logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),#7c3aed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
   .logo-text{font-size:17px;font-weight:700;}
@@ -73,21 +73,21 @@
   .btn-export:hover{border-color:var(--accent);color:var(--accent);}
   .no-records{text-align:center;padding:28px;color:var(--text-muted);font-size:12px;line-height:1.8;}
 
-  .graph-area{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#0d1629 0%,#0a0e1a 70%);}
-  .graph-area::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;}
+  .graph-area{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#2a3f57 0%,#1e2a3a 70%);}
+  .graph-area::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(100,160,220,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(100,160,220,.04) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;}
   #graph-canvas{width:100%;height:100%;}
   .graph-controls{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:5px;}
   .ctrl-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
   .ctrl-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-  .graph-legend{position:absolute;bottom:14px;left:14px;background:rgba(17,24,39,.92);border:1px solid var(--border);border-radius:10px;padding:11px 14px;backdrop-filter:blur(10px);}
+  .graph-legend{position:absolute;bottom:14px;left:14px;background:rgba(37,51,71,.95);border:1px solid var(--border);border-radius:10px;padding:11px 14px;backdrop-filter:blur(10px);}
   .legend-title{font-size:10px;color:var(--text-muted);margin-bottom:7px;letter-spacing:1px;text-transform:uppercase;}
   .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:4px;}
   .legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
   .legend-line{display:flex;align-items:center;gap:7px;font-size:11px;margin-bottom:4px;}
   .legend-edge{width:24px;height:2px;flex-shrink:0;}
 
-  .tooltip{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px;min-width:190px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+  .tooltip{position:absolute;background:#253347;border:1px solid var(--border);border-radius:11px;padding:13px;min-width:190px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,.4);}
   .tooltip.visible{opacity:1;}
   .tooltip-type{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
   .tooltip-value{font-size:15px;font-weight:600;margin-bottom:3px;}
@@ -104,9 +104,17 @@
   .modal-actions{display:flex;gap:9px;margin-top:14px;}
   .btn-primary{flex:1;padding:10px;background:linear-gradient(135deg,var(--accent),#0099bb);border:none;border-radius:8px;color:#000;font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
   .btn-secondary{flex:1;padding:10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Kanit',sans-serif;font-size:13px;cursor:pointer;}
-  ::-webkit-scrollbar{width:4px;}
-  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .graph-search{position:absolute;top:14px;left:14px;display:flex;flex-direction:column;gap:6px;z-index:10;}
+  .graph-search-box{display:flex;gap:6px;align-items:center;}
+  .graph-search-box input{background:rgba(37,51,71,.95);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Kanit',sans-serif;font-size:12px;outline:none;width:190px;backdrop-filter:blur(10px);transition:border-color .2s;}
+  .graph-search-box input:focus{border-color:var(--accent);}
+  .graph-search-box button{padding:7px 10px;background:rgba(0,212,255,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;transition:all .2s;backdrop-filter:blur(10px);}
+  .graph-search-box button:hover{background:var(--accent);color:#000;}
+  .graph-filter{display:flex;flex-wrap:wrap;gap:5px;max-width:420px;}
+  .filter-chip{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s;opacity:.5;font-family:'Kanit',sans-serif;}
+  .filter-chip.active{opacity:1;}
+  .search-result-badge{position:absolute;top:50px;left:14px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--accent);display:none;backdrop-filter:blur(10px);}
+
 </style>
 </head>
 <body>
@@ -176,6 +184,18 @@
 
   <div class="graph-area">
     <canvas id="graph-canvas"></canvas>
+
+    <!-- Search & Filter -->
+    <div class="graph-search">
+      <div class="graph-search-box">
+        <input type="text" id="graph-search-input" placeholder="🔍 ค้นหา node..." oninput="searchGraph()" onkeydown="if(event.key==='Enter')jumpToResult()">
+        <button onclick="jumpToResult()" title="ไปที่ node">⊙</button>
+        <button onclick="clearSearch()" title="ล้าง">✕</button>
+      </div>
+      <div class="graph-filter" id="graph-filter"></div>
+    </div>
+    <div class="search-result-badge" id="search-badge"></div>
+
     <div class="graph-controls">
       <button class="ctrl-btn" onclick="zoomIn()">＋</button>
       <button class="ctrl-btn" onclick="zoomOut()">－</button>
@@ -465,19 +485,44 @@ function drawGraph() {
   });
 
   // Nodes
-  nodes.forEach(n => {
-    const isHover=n===hoveredNode;
+  const visibleNodes = nodes.filter(n => activeFilters.has(n.type));
+  const hiddenNodes  = nodes.filter(n => !activeFilters.has(n.type));
+  const hasSearch    = searchResults.length > 0;
+
+  // dim hidden nodes lightly
+  hiddenNodes.forEach(n => {
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ctx.fillStyle=n.color+'15';
+    ctx.fill();
+  });
+
+  visibleNodes.forEach(n => {
+    const isHover    = n===hoveredNode;
+    const isFound    = n===highlightedNode;
+    const isInResult = searchResults.includes(n);
+    const dimmed     = hasSearch && !isInResult;
     const r=n.r;
 
+    ctx.globalAlpha = dimmed ? 0.2 : 1;
     ctx.shadowColor=n.color;
-    ctx.shadowBlur=isHover?30:14;
+    ctx.shadowBlur=isFound?40:isHover?30:14;
 
     // Outer ring
     ctx.beginPath();
-    ctx.arc(n.x,n.y,r+(isHover?8:4),0,Math.PI*2);
-    ctx.strokeStyle=n.color+(isHover?'cc':'33');
-    ctx.lineWidth=isHover?2.5:1.5;
+    ctx.arc(n.x,n.y,r+(isFound?10:isHover?8:4),0,Math.PI*2);
+    ctx.strokeStyle=n.color+(isFound?'ff':isHover?'cc':'33');
+    ctx.lineWidth=isFound?3:isHover?2.5:1.5;
     ctx.stroke();
+
+    // Pulse ring for found node
+    if (isFound) {
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,r+16,0,Math.PI*2);
+      ctx.strokeStyle=n.color+'44';
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
 
     // Fill
     const grad=ctx.createRadialGradient(n.x-r*.25,n.y-r*.25,1,n.x,n.y,r);
@@ -503,6 +548,7 @@ function drawGraph() {
     ctx.font='8px Kanit';
     ctx.textBaseline='top';
     ctx.fillText(NODE_CFG[n.type].label,n.x,n.y+r+4);
+    ctx.globalAlpha=1;
   });
 
   ctx.restore();
@@ -561,7 +607,95 @@ function hideTip(){tip.classList.remove('visible');}
 // ── ZOOM ──────────────────────────────────────────────────────
 function zoomIn(){const f=1.2,cx=canvas.width/2,cy=canvas.height/2;panX=cx-(cx-panX)*f;panY=cy-(cy-panY)*f;zoom=Math.min(6,zoom*f);drawGraph();}
 function zoomOut(){const f=0.8,cx=canvas.width/2,cy=canvas.height/2;panX=cx-(cx-panX)*f;panY=cy-(cy-panY)*f;zoom=Math.max(0.1,zoom*f);drawGraph();}
-function resetView(){zoom=1;panX=0;panY=0;drawGraph();}
+function resetView(){zoom=1;panX=0;panY=0;searchResults=[];highlightedNode=null;drawGraph();}
+
+// ── GRAPH SEARCH & FILTER ─────────────────────────────────────
+let searchResults   = [];   // node ที่ตรงกับคำค้น
+let searchIndex     = 0;    // ตัวปัจจุบันที่กำลัง focus
+let highlightedNode = null; // node ที่ถูก highlight จากการค้น
+let activeFilters   = new Set(Object.keys(NODE_CFG)); // ประเภทที่แสดง
+
+function buildFilterChips() {
+  const container = document.getElementById('graph-filter');
+  if (!container) return;
+  container.innerHTML = Object.entries(NODE_CFG).map(([type, cfg]) => `
+    <div class="filter-chip active"
+      style="background:${cfg.color}22;border-color:${cfg.color};color:${cfg.color}"
+      id="chip-${type}" onclick="toggleFilter('${type}','${cfg.color}')">
+      ${cfg.emoji} ${cfg.label}
+    </div>
+  `).join('');
+}
+
+function toggleFilter(type, color) {
+  const chip = document.getElementById('chip-'+type);
+  if (activeFilters.has(type)) {
+    activeFilters.delete(type);
+    chip.classList.remove('active');
+  } else {
+    activeFilters.add(type);
+    chip.classList.add('active');
+  }
+  drawGraph();
+}
+
+function searchGraph() {
+  const q = document.getElementById('graph-search-input').value.trim().toLowerCase();
+  const badge = document.getElementById('search-badge');
+  if (!q) { searchResults=[]; highlightedNode=null; badge.style.display='none'; drawGraph(); return; }
+  searchResults = nodes.filter(n => n.value && n.value.toLowerCase().includes(q));
+  searchIndex = 0;
+  if (searchResults.length > 0) {
+    highlightedNode = searchResults[0];
+    badge.textContent = `พบ ${searchResults.length} node — Enter หรือ ⊙ เพื่อ zoom`;
+    badge.style.display = 'block';
+    zoomToNode(searchResults[0]);
+  } else {
+    highlightedNode = null;
+    badge.textContent = 'ไม่พบ node ที่ตรงกัน';
+    badge.style.display = 'block';
+  }
+  drawGraph();
+}
+
+function jumpToResult() {
+  if (!searchResults.length) return;
+  searchIndex = (searchIndex + 1) % searchResults.length;
+  highlightedNode = searchResults[searchIndex];
+  const badge = document.getElementById('search-badge');
+  badge.textContent = `node ${searchIndex+1}/${searchResults.length}`;
+  zoomToNode(highlightedNode);
+  drawGraph();
+}
+
+function clearSearch() {
+  document.getElementById('graph-search-input').value = '';
+  searchResults=[]; highlightedNode=null;
+  document.getElementById('search-badge').style.display='none';
+  drawGraph();
+}
+
+// zoom & pan ไปหา node เป้าหมายแบบ smooth
+function zoomToNode(node) {
+  const targetZoom = 2.2;
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const startZoom = zoom, startPanX = panX, startPanY = panY;
+  const endPanX = cx - node.x * targetZoom;
+  const endPanY = cy - node.y * targetZoom;
+  const dur = 500, start = performance.now();
+
+  function ease(t){ return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2; }
+  function step(now) {
+    const t = Math.min((now-start)/dur, 1);
+    const e = ease(t);
+    zoom   = startZoom + (targetZoom - startZoom)*e;
+    panX   = startPanX + (endPanX - startPanX)*e;
+    panY   = startPanY + (endPanY - startPanY)*e;
+    drawGraph();
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
 // ── GOOGLE SHEETS API ─────────────────────────────────────────
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzoahmUyx9LB-4EwZL1HwX5DvaQRMO4MAbxlr9t1X6EEJrVVobeSjgEaIkrSdUdeByw/exec';
@@ -669,7 +803,7 @@ async function addRecord() {
     if (ok) { await loadFromSheet(); return; }
   }
 
-  const rec = { id:'R'+String(idCounter++).padStart(4,'0'), sPhone:sp, sName:sn, sAddr:sa, rPhone:rp, rName:rn, rAddr:ra };
+  const rec = { id:'R'+String(idCounter++).padStart(4,'0'), sPhone:String(sp), sName:sn, sAddr:sa, rPhone:String(rp), rName:rn, rAddr:ra };
   records.push(rec);
   ['s-phone','s-name','s-addr','r-phone','r-name','r-addr'].forEach(id => document.getElementById(id).value='');
   rebuildGraph(); renderList(); switchTab('list');
@@ -829,6 +963,7 @@ function dl(content,name,type) {
 // ── INIT ──────────────────────────────────────────────────────
 window.addEventListener('resize', () => { resizeCanvas(); drawGraph(); });
 resizeCanvas(); drawGraph();
+buildFilterChips();
 loadFromSheet().then(() => startPolling());
 </script>
 </body>
