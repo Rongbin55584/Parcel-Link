@@ -135,15 +135,12 @@
   <div class="login-box">
     <div class="login-logo">📦</div>
     <div class="login-title">ParcelNet</div>
-    <div class="login-sub">กรุณากรอกชื่อ-นามสกุลจริงเพื่อเข้าใช้งาน</div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <input class="login-input" id="login-firstname" type="text" placeholder="ชื่อ"
-        maxlength="30" style="margin-bottom:0;flex:1"
-        onkeydown="if(event.key==='Enter')document.getElementById('login-lastname').focus()">
-      <input class="login-input" id="login-lastname" type="text" placeholder="นามสกุล"
-        maxlength="30" style="margin-bottom:0;flex:1"
-        onkeydown="if(event.key==='Enter')submitLogin()">
-    </div>
+    <div class="login-sub">กรุณากรอกข้อมูลเพื่อเข้าใช้งาน</div>
+    <input class="login-input" id="login-fullname" type="text" placeholder="ชื่อ-นามสกุล เช่น สมชาย ใจดี"
+      maxlength="60" onkeydown="if(event.key==='Enter')document.getElementById('login-idcard').focus()">
+    <input class="login-input" id="login-idcard" type="text" placeholder="เลขประจำตัวประชาชน 13 หลัก"
+      maxlength="13" onkeydown="if(event.key==='Enter')submitLogin()"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'')">
     <div class="login-error" id="login-error"></div>
     <button class="login-btn" id="login-btn" onclick="submitLogin()">เข้าใช้งาน →</button>
   </div>
@@ -730,39 +727,42 @@ function zoomToNode(node) {
 
 // ── LOGIN ─────────────────────────────────────────────────────
 async function submitLogin() {
-  const first = document.getElementById('login-firstname').value.trim();
-  const last  = document.getElementById('login-lastname').value.trim();
-  const err   = document.getElementById('login-error');
-  const btn   = document.getElementById('login-btn');
+  const fullName = document.getElementById('login-fullname').value.trim();
+  const idCard   = document.getElementById('login-idcard').value.trim();
+  const err      = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
 
-  if (!first || first.length < 2) {
-    err.textContent = '⚠️ กรุณากรอกชื่อจริง (อย่างน้อย 2 ตัวอักษร)';
-    err.style.display = 'block'; return;
-  }
-  if (!last || last.length < 2) {
-    err.textContent = '⚠️ กรุณากรอกนามสกุลจริง (อย่างน้อย 2 ตัวอักษร)';
+  // ตรวจชื่อ-นามสกุล
+  const parts = fullName.split(/\s+/);
+  if (!fullName || parts.length < 2 || parts[0].length < 2 || parts[1].length < 2) {
+    err.textContent = '⚠️ กรุณากรอกชื่อ-นามสกุลจริง เช่น สมชาย ใจดี';
     err.style.display = 'block'; return;
   }
 
-  const fullName = first + ' ' + last;
+  // ตรวจเลขบัตรประชาชน
+  if (!idCard || idCard.length !== 13 || !/^\d{13}$/.test(idCard)) {
+    err.textContent = '⚠️ กรุณากรอกเลขประจำตัวประชาชน 13 หลัก';
+    err.style.display = 'block'; return;
+  }
+
   btn.textContent = '⏳ กำลังตรวจสอบ...';
   btn.disabled = true;
   err.style.display = 'none';
 
   try {
-    // ตรวจ whitelist
-    const res  = await fetch(`${GAS_URL}?action=checkUser&name=${encodeURIComponent(fullName)}`);
+    // ตรวจ whitelist ด้วยเลขบัตรประชาชน
+    const res  = await fetch(`${GAS_URL}?action=checkUser&name=${encodeURIComponent(idCard)}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     if (!data.allowed) {
-      err.textContent = '🚫 ชื่อนี้ยังไม่ได้รับอนุญาต กรุณาติดต่อผู้ดูแลระบบ';
+      err.textContent = '🚫 ไม่พบข้อมูลในระบบ กรุณาติดต่อผู้ดูแลระบบ';
       err.style.display = 'block';
       btn.textContent = 'เข้าใช้งาน →'; btn.disabled = false;
       return;
     }
 
-    // บันทึก login log ลง Sheet
+    // บันทึก login log (ชื่อ-นามสกุล + timestamp)
     await gasPost({ action: 'loginLog', name: fullName });
 
     // เข้าสู่ระบบสำเร็จ
@@ -795,8 +795,8 @@ function logout() {
   stopPolling();
   document.getElementById('editor-name').value = '';
   document.getElementById('editor-name-display').textContent = '-';
-  document.getElementById('login-firstname').value = '';
-  document.getElementById('login-lastname').value  = '';
+  document.getElementById('login-fullname').value = '';
+  document.getElementById('login-idcard').value   = '';
   document.getElementById('login-error').style.display = 'none';
   document.getElementById('login-btn').textContent = 'เข้าใช้งาน →';
   document.getElementById('login-btn').disabled = false;
