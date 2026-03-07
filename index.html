@@ -727,44 +727,18 @@ function isFullName(name) {
   return parts.length >= 2 && parts[0].length >= 2 && parts[1].length >= 2;
 }
 
-async function submitLogin() {
-  const name  = document.getElementById('login-name-input').value.trim();
-  const err   = document.getElementById('login-error');
-  const btn   = document.querySelector('.login-btn');
-
-  // ตรวจรูปแบบชื่อ-นามสกุลก่อน
+function submitLogin() {
+  const name = document.getElementById('login-name-input').value.trim();
+  const err  = document.getElementById('login-error');
   if (!name || !isFullName(name)) {
     err.textContent = '⚠️ กรุณากรอกชื่อ-นามสกุลจริง เช่น สมชาย ใจดี';
     err.style.display = 'block';
     return;
   }
-
-  // ตรวจ whitelist กับ Google Sheet
-  btn.textContent = '⏳ กำลังตรวจสอบ...';
-  btn.disabled = true;
   err.style.display = 'none';
-
-  try {
-    const res  = await fetch(`${GAS_URL}?action=checkUser&name=${encodeURIComponent(name)}`);
-    const data = await res.json();
-
-    if (!data.success) throw new Error(data.error);
-
-    if (data.allowed) {
-      sessionStorage.setItem('parcelnet-user', name);
-      document.getElementById('editor-name').value = name;
-      document.getElementById('login-overlay').style.display = 'none';
-    } else {
-      err.textContent = '🚫 ชื่อนี้ยังไม่ได้รับอนุญาต กรุณาติดต่อผู้ดูแลระบบ';
-      err.style.display = 'block';
-    }
-  } catch(e) {
-    err.textContent = '❌ เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง';
-    err.style.display = 'block';
-  }
-
-  btn.textContent = 'เข้าใช้งาน →';
-  btn.disabled = false;
+  sessionStorage.setItem('parcelnet-user', name);
+  document.getElementById('editor-name').value = name;
+  document.getElementById('login-overlay').style.display = 'none';
 }
 
 function checkLogin() {
