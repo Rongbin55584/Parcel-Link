@@ -135,10 +135,12 @@
   <div class="login-box">
     <div class="login-logo">📦</div>
     <div class="login-title">ParcelNet</div>
-    <div class="login-sub">กรุณากรอก ชื่อ-นามสกุล จริง ก่อนเข้าใช้งาน</div>
-    <input class="login-input" id="login-name-input" type="text" placeholder="เช่น สมชาย ใจดี"
-      maxlength="60" onkeydown="if(event.key==='Enter')submitLogin()">
-    <div class="login-error" id="login-error">⚠️ กรุณากรอกชื่อ-นามสกุลจริง เช่น สมชาย ใจดี</div>
+    <div class="login-sub">กรุณากรอก ชื่อ-นามสกุล จริง และ PIN ก่อนเข้าใช้งาน</div>
+    <input class="login-input" id="login-name-input" type="text" placeholder="ชื่อ-นามสกุล เช่น สมชาย ใจดี"
+      maxlength="60" onkeydown="if(event.key==='Enter')document.getElementById('login-pin-input').focus()">
+    <input class="login-input" id="login-pin-input" type="password" placeholder="PIN (5 หลัก)"
+      maxlength="6" onkeydown="if(event.key==='Enter')submitLogin()">
+    <div class="login-error" id="login-error"></div>
     <button class="login-btn" onclick="submitLogin()">เข้าใช้งาน →</button>
   </div>
 </div>
@@ -150,6 +152,7 @@
       <div class="logo-text">ParcelNet</div>
       <div class="logo-sub">ระบบติดตามพัสดุ & เส้นความสัมพันธ์</div>
     </div>
+    <div id="province-badge" style="display:none;padding:4px 12px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);border-radius:20px;font-size:12px;color:#00d4ff;font-weight:600;margin-left:10px;"></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;flex:1;justify-content:center;">
     <div style="display:flex;align-items:center;gap:7px;">
@@ -722,6 +725,12 @@ function zoomToNode(node) {
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────
+const PIN_LIST = {
+  '86000': 'ชุมพร',
+  '83000': 'ภูเก็ต',
+  '84000': 'สุราษฎร์ธานี',
+};
+
 function isFullName(name) {
   const parts = name.trim().split(/\s+/);
   return parts.length >= 2 && parts[0].length >= 2 && parts[1].length >= 2;
@@ -729,23 +738,41 @@ function isFullName(name) {
 
 function submitLogin() {
   const name = document.getElementById('login-name-input').value.trim();
+  const pin  = document.getElementById('login-pin-input').value.trim();
   const err  = document.getElementById('login-error');
+
   if (!name || !isFullName(name)) {
     err.textContent = '⚠️ กรุณากรอกชื่อ-นามสกุลจริง เช่น สมชาย ใจดี';
-    err.style.display = 'block';
-    return;
+    err.style.display = 'block'; return;
   }
+  if (!pin) {
+    err.textContent = '⚠️ กรุณากรอก PIN';
+    err.style.display = 'block'; return;
+  }
+  if (!PIN_LIST[pin]) {
+    err.textContent = '🚫 PIN ไม่ถูกต้อง กรุณาติดต่อผู้ดูแลระบบ';
+    err.style.display = 'block'; return;
+  }
+
   err.style.display = 'none';
+  const province = PIN_LIST[pin];
   sessionStorage.setItem('parcelnet-user', name);
+  sessionStorage.setItem('parcelnet-province', province);
   document.getElementById('editor-name').value = name;
   document.getElementById('login-overlay').style.display = 'none';
+  // แสดงจังหวัดใน header
+  const provEl = document.getElementById('province-badge');
+  if (provEl) { provEl.textContent = '📍 ' + province; provEl.style.display = 'inline-block'; }
 }
 
 function checkLogin() {
-  const saved = sessionStorage.getItem('parcelnet-user');
-  if (saved && isFullName(saved)) {
-    document.getElementById('editor-name').value = saved;
+  const name     = sessionStorage.getItem('parcelnet-user');
+  const province = sessionStorage.getItem('parcelnet-province');
+  if (name && isFullName(name) && province) {
+    document.getElementById('editor-name').value = name;
     document.getElementById('login-overlay').style.display = 'none';
+    const provEl = document.getElementById('province-badge');
+    if (provEl) { provEl.textContent = '📍 ' + province; provEl.style.display = 'inline-block'; }
   }
 }
 
