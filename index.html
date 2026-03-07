@@ -110,14 +110,38 @@
   .graph-search-box input:focus{border-color:var(--accent);}
   .graph-search-box button{padding:7px 10px;background:rgba(0,212,255,.15);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;cursor:pointer;transition:all .2s;backdrop-filter:blur(10px);}
   .graph-search-box button:hover{background:var(--accent);color:#000;}
-  .graph-filter{display:flex;flex-wrap:wrap;gap:5px;max-width:420px;}
   .filter-chip{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s;opacity:.5;font-family:'Kanit',sans-serif;}
   .filter-chip.active{opacity:1;}
   .search-result-badge{position:absolute;top:50px;left:14px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.4);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--accent);display:none;backdrop-filter:blur(10px);}
-
+  .login-overlay{position:fixed;inset:0;background:rgba(15,22,35,.97);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+  .login-box{background:#253347;border:1px solid #3a5068;border-radius:18px;padding:36px 40px;width:360px;max-width:90vw;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+  .login-logo{font-size:40px;margin-bottom:12px;}
+  .login-title{font-size:20px;font-weight:700;margin-bottom:4px;color:#e2e8f0;}
+  .login-sub{font-size:12px;color:#8aaabf;margin-bottom:24px;}
+  .login-input{width:100%;background:#2d3f55;border:1px solid #3a5068;border-radius:10px;padding:12px 16px;color:#e2e8f0;font-family:'Kanit',sans-serif;font-size:14px;outline:none;text-align:center;transition:border-color .2s;margin-bottom:14px;}
+  .login-input:focus{border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+  .login-btn{width:100%;padding:12px;background:linear-gradient(135deg,#00d4ff,#0099bb);border:none;border-radius:10px;color:#000;font-family:'Kanit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+  .login-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,212,255,.3);}
+  .login-error{font-size:11px;color:#ef4444;margin-top:-8px;margin-bottom:10px;display:none;}
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
+
+<!-- Login Overlay -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">📦</div>
+    <div class="login-title">ParcelNet</div>
+    <div class="login-sub">กรุณากรอก ชื่อ-นามสกุล จริง ก่อนเข้าใช้งาน</div>
+    <input class="login-input" id="login-name-input" type="text" placeholder="เช่น สมชาย ใจดี"
+      maxlength="60" onkeydown="if(event.key==='Enter')submitLogin()">
+    <div class="login-error" id="login-error">⚠️ กรุณากรอกชื่อ-นามสกุลจริง เช่น สมชาย ใจดี</div>
+    <button class="login-btn" onclick="submitLogin()">เข้าใช้งาน →</button>
+  </div>
+</div>
 
 <header class="header">
   <div class="logo">
@@ -697,7 +721,36 @@ function zoomToNode(node) {
   requestAnimationFrame(step);
 }
 
-// ── GOOGLE SHEETS API ─────────────────────────────────────────
+// ── LOGIN ─────────────────────────────────────────────────────
+function isFullName(name) {
+  // ต้องมีช่องว่างอย่างน้อย 1 ช่อง และแต่ละส่วนต้องยาวอย่างน้อย 2 ตัวอักษร
+  const parts = name.trim().split(/\s+/);
+  return parts.length >= 2 && parts[0].length >= 2 && parts[1].length >= 2;
+}
+
+function submitLogin() {
+  const name = document.getElementById('login-name-input').value.trim();
+  const err  = document.getElementById('login-error');
+  if (!name || !isFullName(name)) {
+    err.textContent = '⚠️ กรุณากรอกชื่อ-นามสกุลจริง เช่น สมชาย ใจดี';
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  sessionStorage.setItem('parcelnet-user', name);
+  document.getElementById('editor-name').value = name;
+  document.getElementById('login-overlay').style.display = 'none';
+}
+
+function checkLogin() {
+  const saved = sessionStorage.getItem('parcelnet-user');
+  if (saved && isFullName(saved)) {
+    document.getElementById('editor-name').value = saved;
+    document.getElementById('login-overlay').style.display = 'none';
+  }
+}
+
+
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzoahmUyx9LB-4EwZL1HwX5DvaQRMO4MAbxlr9t1X6EEJrVVobeSjgEaIkrSdUdeByw/exec';
 
 let currentVersion = 0;      // version ล่าสุดที่เรารู้
@@ -795,6 +848,7 @@ async function addRecord() {
   const sp=v('s-phone'),sn=v('s-name'),sa=v('s-addr');
   const rp=v('r-phone'),rn=v('r-name'),ra=v('r-addr');
   if (!sp||!sn||!rp||!rn) { alert('กรุณากรอกเบอร์และชื่อผู้ส่ง-ผู้รับ'); return; }
+  if (!editorName()) { alert('กรุณาระบุชื่อผู้ใช้งานก่อนบันทึก'); document.getElementById('login-overlay').style.display='flex'; return; }
 
   // ตรวจ conflict ก่อน save
   const hasConflict = await checkConflict();
@@ -921,7 +975,6 @@ function renderList() {
         <span class="record-id">${r.id}</span>
         <div class="record-actions">
           <button class="btn-icon btn-edit" onclick="openEditModal('${r.id}')">✏️</button>
-          <button class="btn-icon btn-delete" onclick="deleteRecord('${r.id}')">🗑️</button>
         </div>
       </div>
       <div class="record-flow">
@@ -964,6 +1017,7 @@ function dl(content,name,type) {
 window.addEventListener('resize', () => { resizeCanvas(); drawGraph(); });
 resizeCanvas(); drawGraph();
 buildFilterChips();
+checkLogin();
 loadFromSheet().then(() => startPolling());
 </script>
 </body>
