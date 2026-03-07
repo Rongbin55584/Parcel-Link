@@ -732,9 +732,9 @@ async function submitLogin() {
   const err      = document.getElementById('login-error');
   const btn      = document.getElementById('login-btn');
 
-  // ตรวจชื่อ-นามสกุล
-  const parts = fullName.split(/\s+/);
-  if (!fullName || parts.length < 2 || parts[0].length < 2 || parts[1].length < 2) {
+  // ตรวจชื่อ-นามสกุล (รองรับยศ/คำนำหน้า เช่น พ.ต.ท. นส. ดร.)
+  const nameParts = fullName.replace(/\./g, ' ').trim().split(/\s+/).filter(p => p.length > 0);
+  if (!fullName || nameParts.length < 2) {
     err.textContent = '⚠️ กรุณากรอกชื่อ-นามสกุลจริง เช่น สมชาย ใจดี';
     err.style.display = 'block'; return;
   }
